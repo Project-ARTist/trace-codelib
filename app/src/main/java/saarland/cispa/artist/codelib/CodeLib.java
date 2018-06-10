@@ -26,10 +26,7 @@ import android.util.Log;
 
 
 /**
- * While the CodeLib project can be considered a companion Android library for ARTist modules,
- * the `CodeLib` class in particular represents the facade/api to this library. It defines
- * methods that are available to ARTist instrumentation passes and provides access through a
- * singleton instance stored in a public field.
+ * Represents the codelib for the ARTist trace-module with a simple, one-method API.
  */
 public class CodeLib {
 
@@ -45,6 +42,7 @@ public class CodeLib {
      *
      * It HAS to be a static field with exactly this name b/c ARTist expects this field to be present.
      */
+    @SuppressWarnings("unused")
     public static CodeLib INSTANCE = new CodeLib();
 
     // Constants
@@ -52,7 +50,7 @@ public class CodeLib {
     private static final String VERSION = TAG + " # 1.0.0";
 
     @SuppressWarnings("WeakerAccess")
-    public  final static String MSG_NOT_FOUND = "<Not Found>";
+    public final static String MSG_NOT_FOUND = "<Not Found>";
 
 
     /**
@@ -64,42 +62,34 @@ public class CodeLib {
 
 
 
-    /**
-     *  Injection target for an injection artist instrumentation pass.
+    /** Get the name of the calling method
      *
-     *  Invocations of this method will be added to the target by ARTist.
-     * @param fortytwo expected to be the constant 42.
+     * The name is probed from the current Thread's stacktrace.
+     *
+     * @return the name of the calling method
      */
-    @SuppressWarnings("unused")
-    @Inject
-    public void injectionArtistTarget(int fortytwo) {
-        if (fortytwo != 42) {
-            Log.e(TAG, "Error! Our artist pass provided " + fortytwo + " instead of 42");
-        } else {
-            Log.d(TAG, "Injection successfull");
+    private String getCallingMethodName() {
+        // CallStack depth of calling function.
+        final int CALLING_METHOD_STACK_LEVEL = 4;
+
+        final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        String callingMethodName;
+        try {
+            final StackTraceElement callingMethod = stackTrace[CALLING_METHOD_STACK_LEVEL];
+            callingMethodName = callingMethod.toString();
+        } catch (final NullPointerException | ArrayIndexOutOfBoundsException e) {
+            callingMethodName = MSG_NOT_FOUND;
         }
+        return callingMethodName;
     }
 
     /**
-     * Injection target for an artist instrumentation pass.
-     *
-     * Invocations of this method will be added to the target by ARTist.
-     *
-     * @param leet expected to be 1337.
-     * @param thiz the object from which this method was called.
+     *  Tracelog method, prints the method name of the calling method.
      */
     @SuppressWarnings("unused")
     @Inject
-    public void basicArtistTarget(int leet, Object thiz) {
-        if (leet != 1337) {
-            Log.e(TAG, "Error! Our artist pass provided " + leet + " instead of 1337");
-            return;
-        }
-        // now you can do sth meaningful with the `this` pointer of the object from which we are called
-        if (thiz instanceof Context) {
-            Log.i(TAG, "Found a context object, maybe store it for later?");
-            // ...
-        }
-        // ...
+    public void traceLog() {
+        final String callingMethodName = getCallingMethodName();
+        Log.d(TAG, "Caller -> " + callingMethodName);
     }
 }
